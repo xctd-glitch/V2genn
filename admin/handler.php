@@ -2515,7 +2515,7 @@ if ($action === 'add_domain') {
     $cfCacheAggressive = (bool) ($data['cf_cache_aggressive'] ?? true);
     $cfBrowserCacheTtl = (bool) ($data['cf_browser_cache_ttl'] ?? true);
     $cfSpeedMinify = (bool) ($data['cf_speed_minify'] ?? true);
-    $cfSpeedRocket = (bool) ($data['cf_speed_rocket'] ?? true);
+    $cfSpeedRocket = (bool) ($data['cf_speed_rocket'] ?? false);  // off — breaks tracking JS
     $cfSpeedHints = (bool) ($data['cf_speed_hints'] ?? true);
     $cfSpeedHttp2 = (bool) ($data['cf_speed_http2'] ?? true);
     $cfSpeedBrotli = (bool) ($data['cf_speed_brotli'] ?? true);
@@ -2525,6 +2525,28 @@ if ($action === 'add_domain') {
     $cfDmarcMgmt       = (bool) ($data['cf_dmarc_mgmt']      ?? true);
     $cfCustomSkipId    = (bool) ($data['cf_custom_skip_id']  ?? true);
     $cfAuditProxyLeaks = (bool) ($data['cf_audit_proxy_leaks'] ?? true);
+    // ── SSL / TLS ─────────────────────────────────────────────
+    $cfSsl                 = (bool) ($data['cf_ssl']                   ?? true);
+    $cfAlwaysUseHttps      = (bool) ($data['cf_always_use_https']      ?? true);
+    $cfAutoHttpsRewrites   = (bool) ($data['cf_auto_https_rewrites']   ?? true);
+    $cfOpportunisticEnc    = (bool) ($data['cf_opportunistic_enc']     ?? true);
+    $cfOpportunisticOnion  = (bool) ($data['cf_opportunistic_onion']   ?? true);
+    $cfMinTlsVersion       = (bool) ($data['cf_min_tls_version']       ?? true);
+    $cfTls13               = (bool) ($data['cf_tls_1_3']               ?? true);
+    // ── Security settings ─────────────────────────────────────
+    $cfSecurityLevelMedium = (bool) ($data['cf_security_level_medium'] ?? true);
+    $cfBrowserCheck        = (bool) ($data['cf_browser_check']         ?? true);
+    $cfChallengeTtl        = (bool) ($data['cf_challenge_ttl']         ?? true);
+    $cfEmailObfuscation    = (bool) ($data['cf_email_obfuscation']     ?? true);
+    $cfServerSideExclude   = (bool) ($data['cf_server_side_exclude']   ?? true);
+    $cfHotlinkProtection   = (bool) ($data['cf_hotlink_protection']    ?? true);
+    $cfIpGeolocation       = (bool) ($data['cf_ip_geolocation']        ?? true);
+    $cfPrivacyPass         = (bool) ($data['cf_privacy_pass']          ?? true);
+    // ── Performance extras ────────────────────────────────────
+    $cfWebsockets          = (bool) ($data['cf_websockets']            ?? true);
+    $cfPrefetchPreload     = (bool) ($data['cf_prefetch_preload']      ?? true);
+    $cfSpeedBrain          = (bool) ($data['cf_speed_brain']           ?? true);
+    $cfFonts               = (bool) ($data['cf_fonts']                 ?? true);
 
     $serverIp = trim($config['server_ip'] ?? '');
     $proxied  = ($config['cf_proxied'] ?? 'true') === 'true';
@@ -2810,24 +2832,48 @@ if ($action === 'add_domain') {
 
         $logs[] = ['type' => 'step', 'message' => "STEP 3: Activating Cloudflare Security & Speed..."];
         applyCfSecuritySpeed($config, $zoneId, $logs, [
-                'under_attack' => $cfUnderAttack,
-                'page_shield' => $cfPageShield,
-                'bot_fight' => $cfBotFight,
-                'leaked_creds' => $cfLeakedCreds,
-                'waf' => $cfWaf,
-                'always_online' => $cfAlwaysOnline,
-                'cache_aggressive' => $cfCacheAggressive,
-                'browser_cache_ttl' => $cfBrowserCacheTtl,
-                'minify' => $cfSpeedMinify,
-                'rocket' => $cfSpeedRocket,
-                'early_hints' => $cfSpeedHints,
-                'http2' => $cfSpeedHttp2,
-                'brotli' => $cfSpeedBrotli,
-                'hsts'             => $cfHsts,
-                'response_headers' => $cfResponseHeaders,
-                'smart_shield'     => $cfSmartShield,
-                'dmarc_mgmt'       => $cfDmarcMgmt,
-                'custom_skip_id'   => $cfCustomSkipId,
+            // ── SSL / TLS ─────────────────────────────────────
+            'ssl'                      => $cfSsl,
+            'always_use_https'         => $cfAlwaysUseHttps,
+            'automatic_https_rewrites' => $cfAutoHttpsRewrites,
+            'opportunistic_encryption' => $cfOpportunisticEnc,
+            'opportunistic_onion'      => $cfOpportunisticOnion,
+            'min_tls_version'          => $cfMinTlsVersion,
+            'tls_1_3'                  => $cfTls13,
+            // ── Security settings ─────────────────────────────
+            'under_attack'             => $cfUnderAttack,
+            'security_level_medium'    => $cfSecurityLevelMedium,
+            'browser_check'            => $cfBrowserCheck,
+            'challenge_ttl'            => $cfChallengeTtl,
+            'email_obfuscation'        => $cfEmailObfuscation,
+            'server_side_exclude'      => $cfServerSideExclude,
+            'hotlink_protection'       => $cfHotlinkProtection,
+            'ip_geolocation'           => $cfIpGeolocation,
+            'privacy_pass'             => $cfPrivacyPass,
+            // ── Advanced security ─────────────────────────────
+            'page_shield'              => $cfPageShield,
+            'bot_fight'                => $cfBotFight,
+            'leaked_creds'             => $cfLeakedCreds,
+            'waf'                      => $cfWaf,
+            'hsts'                     => $cfHsts,
+            'response_headers'         => $cfResponseHeaders,
+            'smart_shield'             => $cfSmartShield,
+            'dmarc_mgmt'               => $cfDmarcMgmt,
+            'custom_skip_id'           => $cfCustomSkipId,
+            // ── Cache ─────────────────────────────────────────
+            'always_online'            => $cfAlwaysOnline,
+            'cache_aggressive'         => $cfCacheAggressive,
+            'browser_cache_ttl'        => $cfBrowserCacheTtl,
+            // ── Performance ───────────────────────────────────
+            'http2'                    => $cfSpeedHttp2,
+            'brotli'                   => $cfSpeedBrotli,
+            'early_hints'              => $cfSpeedHints,
+            'minify'                   => $cfSpeedMinify,
+            'websockets'               => $cfWebsockets,
+            'prefetch_preload'         => $cfPrefetchPreload,
+            'speed_brain'              => $cfSpeedBrain,
+            'fonts'                    => $cfFonts,
+            'rocket'                   => $cfSpeedRocket,
         ]);
 
         if ($cfAuditProxyLeaks && !empty($zoneId)) {
