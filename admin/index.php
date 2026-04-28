@@ -903,7 +903,7 @@ if (empty($_SESSION['dashboard_auth'])) {
         class="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/50 backdrop-blur-sm overflow-y-auto"
         @keydown.escape.window="showSettings = false"
         @click.self="showSettings = false">
-        <div class="sl-card w-full max-w-2xl"
+        <div class="sl-card"
             x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 -translate-y-4 scale-95"
             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
