@@ -1,0 +1,43 @@
+# ── Allow all static assets ──
+# Override parent .htaccess / mod_security rules that may block image/css/js serving
+
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
+
+# ── Disable directory indexing ──
+Options -Indexes +FollowSymLinks
+
+# ── Disable mod_security for static assets (if available) ──
+<IfModule mod_security.c>
+    SecFilterEngine Off
+    SecFilterScanPOST Off
+</IfModule>
+<IfModule mod_security2.c>
+    SecRuleEngine Off
+</IfModule>
+
+# ── Proper MIME types ──
+<IfModule mod_mime.c>
+    AddType image/png   .png
+    AddType image/jpeg  .jpg .jpeg
+    AddType image/svg+xml .svg
+    AddType image/x-icon  .ico
+    AddType image/webp  .webp
+    AddType text/css    .css
+    AddType application/javascript .js
+    AddType font/woff2  .woff2
+    AddType font/woff   .woff
+</IfModule>
+
+# ── Long cache for immutable assets ──
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|svg|webp|woff2?)$">
+        Header set Cache-Control "public, max-age=604800, immutable"
+        Header unset Pragma
+    </FilesMatch>
+</IfModule>

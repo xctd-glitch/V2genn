@@ -1,0 +1,26 @@
+notrackng production package for cPanel shared hosting
+
+Deploy order:
+1. Upload and extract the zip into the target document root or app directory.
+2. Keep `.user.ini`, `php.ini`, `.htaccess`, `install.php`, `metrics.php`, and `ops/` present after extraction.
+3. Run `install.php` once to write `.env`, schema, admin user, GeoLite2, and cPanel cron jobs.
+4. Delete `install.php` after setup is complete.
+5. Verify health using `/metrics` or `/healthz` with `METRICS_TOKEN` when configured.
+6. Run `php ops/ensure_mysql_hot_indexes.php --json` on existing MySQL installs.
+7. Run `php ops/process_postback_queue.php` once to initialize worker status.
+8. Run `php ops/smoke_production.php --base-url=https://your-domain.tld --slug=your-slug --metrics-token=<token> --json`.
+
+Expected files in production package:
+- `.user.ini` for per-directory PHP tuning
+- `php.ini` for host-level safe defaults where supported
+- `.htaccess` for routing, blocking non-public paths, and `/metrics` + `/healthz`
+- `install.php` for first-time setup
+- `metrics.php` for health export
+- `ops/ensure_mysql_hot_indexes.php` for existing-install MySQL normalization
+- `ops/smoke_production.php` for repeatable smoke verification
+
+Do not expose:
+- `.env`
+- `data/config.json`
+- `data/sl_data.sqlite`
+- `/ops/*` over HTTP

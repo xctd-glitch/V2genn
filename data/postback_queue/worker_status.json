@@ -1,0 +1,10 @@
+{
+    "running": false,
+    "last_started_at": 1777368062,
+    "last_finished_at": 1777368062,
+    "last_exit_code": 0,
+    "last_message": "No queued postbacks.",
+    "merged_spill_files": 0,
+    "queue_depth_after": 0,
+    "failed_depth_after": 0
+}

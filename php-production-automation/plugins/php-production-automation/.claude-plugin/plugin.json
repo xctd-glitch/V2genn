@@ -1,0 +1,10 @@
+{
+  "name": "php-production-automation",
+  "description": "PHP 8.3 production review automation: unused code, performance bottlenecks, query optimization, restructuring, bug fixes, refactoring, cleanup, hardening, and high-traffic readiness.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Bosss"
+  },
+  "homepage": "https://example.local/php-production-automation",
+  "license": "MIT"
+}

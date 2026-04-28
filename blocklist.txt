@@ -1,0 +1,85 @@
+# ─────────────────────────────────────────────────────────────────
+# blocklist.txt — Domain Blocklist for notrackng Redirect System
+# ─────────────────────────────────────────────────────────────────
+# Format : one domain per line (no protocol, no path)
+# Example: evil.com
+#          sub.evil.com  (blocks this subdomain only)
+# To block all subdomains of a domain, add the root domain.
+# Lines starting with # are comments.
+# ─────────────────────────────────────────────────────────────────
+
+# ── Known Malware Distribution ──
+urlz.fr
+sh.st
+exe.io
+zippy.com.pl
+adf.ly
+
+# ── Known Phishing Infrastructure ──
+webflow-forms.io
+netlify-forms.app
+glitch.me
+000webhostapp.com
+infinityfreeapp.com
+epizy.com
+byethost.com
+freehostia.com
+
+# ── Abused Free Hosting / URL Shorteners used for spam ──
+cutt.us
+bc.vc
+link1s.com
+linkvertise.com
+sub2unlock.net
+sub4unlock.net
+getlinkinfo.com
+shrinkme.io
+gplinks.co
+clk.sh
+earn4clicks.in
+
+# ── Typosquat / Lookalike domains (update regularly) ──
+paypa1.com
+paypa-l.com
+gooogle.com
+g00gle.com
+faceb00k.com
+faceboook.com
+arnazon.com
+amaz0n.com
+micros0ft.com
+rnicrosott.com
+appleid-verify.com
+apple-secure.com
+icloud-login.net
+netflix-billing.com
+netflix-update.net
+spotify-premium-free.com
+tiktok-verify.com
+whatsapp-web.net
+
+# ── Malware/Ransomware C2 (sample — update from threat feeds) ──
+# Add domains from threat intelligence sources like:
+# - abuse.ch (https://urlhaus.abuse.ch)
+# - PhishTank (https://phishtank.org)
+# - OpenPhish (https://openphish.com)
+#
+# Example format:
+# evil-c2-domain.xyz
+# ransomware-dropper.ru
+
+# ── Crypto Scams ──
+binance-airdrop.net
+eth-giveaway.com
+crypto-doubler.io
+btc-multiply.net
+
+# ── Adult/Spam redirect abuse ──
+cam4.com
+chaturbate.stream
+adultfriendfinder.click
+
+# ─────────────────────────────────────────────────────────────────
+# To add domains programmatically, append below this line.
+# Format: one domain per line, lowercase, no trailing spaces.
+# ─────────────────────────────────────────────────────────────────

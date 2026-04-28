@@ -1,0 +1,122 @@
+{
+    "generated_at": "2026-04-28T13:35:29+00:00",
+    "root": "E:\\.genv2\\php-production-automation",
+    "php_version": "8.3.30",
+    "summary": {
+        "php_files": 4,
+        "entrypoints": 0,
+        "composer_files": 0,
+        "sql_files": 0,
+        "server_config_files": 0,
+        "risky_public_files": 0,
+        "findings": 4
+    },
+    "extension_counts": {
+        "md": 10,
+        "php": 4,
+        "json": 2,
+        "ps1": 1,
+        "sh": 1
+    },
+    "entrypoints": [],
+    "composer_files": [],
+    "sql_files": [],
+    "server_config_files": [],
+    "risky_public_files": [],
+    "largest_files": [
+        {
+            "path": ".claude/skills/php-production-review/scripts/php-prod-audit.php",
+            "size": 12527
+        },
+        {
+            "path": "plugins/php-production-automation/skills/php-production-review/scripts/php-prod-audit.php",
+            "size": 12527
+        },
+        {
+            "path": "plugins/php-production-automation/tools/php-prod-audit.php",
+            "size": 12527
+        },
+        {
+            "path": "tools/php-prod-audit.php",
+            "size": 12527
+        },
+        {
+            "path": ".claude/skills/php-production-review/SKILL.md",
+            "size": 7087
+        },
+        {
+            "path": "plugins/php-production-automation/skills/php-production-review/SKILL.md",
+            "size": 7087
+        },
+        {
+            "path": "CLAUDE.md",
+            "size": 5697
+        },
+        {
+            "path": "install.ps1",
+            "size": 3227
+        },
+        {
+            "path": "README.md",
+            "size": 2535
+        },
+        {
+            "path": ".claude/agents/php-production-auditor.md",
+            "size": 2398
+        },
+        {
+            "path": "plugins/php-production-automation/agents/php-production-auditor.md",
+            "size": 2398
+        },
+        {
+            "path": "custom-instructions.md",
+            "size": 1478
+        },
+        {
+            "path": ".claude/rules/php-production-baseline.md",
+            "size": 1105
+        },
+        {
+            "path": "install.sh",
+            "size": 991
+        },
+        {
+            "path": ".claude/commands/php-prod-review.md",
+            "size": 883
+        },
+        {
+            "path": "plugins/php-production-automation/README.md",
+            "size": 645
+        },
+        {
+            "path": "plugins/php-production-automation/.claude-plugin/plugin.json",
+            "size": 391
+        },
+        {
+            "path": "php-prod-audit-report.json",
+            "size": 0
+        }
+    ],
+    "findings": [
+        {
+            "path": ".claude/skills/php-production-review/scripts/php-prod-audit.php",
+            "type": "arrow-function",
+            "evidence": "PHP arrow function found. Project preference says avoid `fn()`."
+        },
+        {
+            "path": "plugins/php-production-automation/skills/php-production-review/scripts/php-prod-audit.php",
+            "type": "arrow-function",
+            "evidence": "PHP arrow function found. Project preference says avoid `fn()`."
+        },
+        {
+            "path": "plugins/php-production-automation/tools/php-prod-audit.php",
+            "type": "arrow-function",
+            "evidence": "PHP arrow function found. Project preference says avoid `fn()`."
+        },
+        {
+            "path": "tools/php-prod-audit.php",
+            "type": "arrow-function",
+            "evidence": "PHP arrow function found. Project preference says avoid `fn()`."
+        }
+    ]
+}
