@@ -71,7 +71,7 @@ function ogimgDb(): ?PDO
         }
         $initCommandAttr = tp_pdo_mysql_attr('MYSQL_ATTR_INIT_COMMAND');
         if ($initCommandAttr !== null) {
-            $opts[$initCommandAttr] = "SET SESSION net_read_timeout=5, net_write_timeout=5";
+            $opts[$initCommandAttr] = 'SET SESSION net_read_timeout=5, net_write_timeout=5';
         }
         $pdo = new PDO("mysql:host={$host};dbname={$name};charset=utf8mb4", $user, $pass, $opts);
     } catch (Throwable $e) {
@@ -91,15 +91,53 @@ function ogimgExtractMime(string $contentType): string
     return '';
 }
 
-// ── Very small placeholder PNG (1x1 transparent) for errors ────
-function ogimgServePlaceholder(int $httpCode = 404): void
+// ── Non-empty fallback image for crawler previews ───────────────
+/**
+ * Always terminates the request via `exit;`. The `never` return type lets
+ * static analysis (PHPStan, IDEs) know callers are unreachable past this
+ * point — prevents null-deref regressions if a future refactor accidentally
+ * adds an early `return;` without `exit`.
+ */
+function ogimgServePlaceholder(int $httpCode = 200): never
 {
+    $fallbackFiles = [
+        __DIR__ . '/../assets/logo.png',
+        __DIR__ . '/../assets/android-chrome-512x512.png',
+        __DIR__ . '/../assets/bg-lg.jpg',
+    ];
+
+    foreach ($fallbackFiles as $fallbackFile) {
+        if (!is_file($fallbackFile)) {
+            continue;
+        }
+
+        $body = @file_get_contents($fallbackFile);
+        if (!is_string($body) || $body === '') {
+            continue;
+        }
+
+        $mime = ogimgSniffMime($body);
+        if ($mime === '') {
+            continue;
+        }
+
+        http_response_code($httpCode);
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . strlen($body));
+        header('Cache-Control: public, max-age=300');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Robots-Tag: all');
+        echo $body;
+        exit;
+    }
+
     http_response_code($httpCode);
     header('Content-Type: image/png');
     header('Cache-Control: public, max-age=60');
     // 1x1 transparent PNG, 67 bytes
     $png = base64_decode(
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII='
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=',
+        true
     );
     echo $png;
     exit;
@@ -351,7 +389,7 @@ function ogimgSniffMime(string $body): string
 // ── Main ───────────────────────────────────────────────────────
 $slug = trim((string) ($_GET['s'] ?? ''));
 if (!preg_match('/^[a-zA-Z0-9_-]{1,30}$/', $slug)) {
-    ogimgServePlaceholder(400);
+    ogimgServePlaceholder();
 }
 
 // ── Rate limit ────────────────────────────────────────────────
@@ -376,7 +414,7 @@ if (function_exists('tp_apcu_fetch')) {
 if ($imageUrl === '') {
     $db = ogimgDb();
     if (!$db) {
-        ogimgServePlaceholder(503);
+        ogimgServePlaceholder();
     }
     try {
         $stmt = $db->prepare('SELECT image FROM short_links WHERE slug = ? AND active = 1 LIMIT 1');
@@ -384,7 +422,7 @@ if ($imageUrl === '') {
         $row = $stmt->fetch();
         $imageUrl = (string) ($row['image'] ?? '');
     } catch (Throwable $e) {
-        ogimgServePlaceholder(503);
+        ogimgServePlaceholder();
     }
 
     if (function_exists('tp_apcu_store')) {
@@ -394,7 +432,7 @@ if ($imageUrl === '') {
 }
 
 if ($imageUrl === '' || filter_var($imageUrl, FILTER_VALIDATE_URL) === false || !ogimgIsSafeUrl($imageUrl)) {
-    ogimgServePlaceholder(404);
+    ogimgServePlaceholder();
 }
 
 // Cached image bytes? (APCu 1 hour → fallback to disk cache 24 h)
@@ -426,16 +464,8 @@ if (!is_string($body) || $body === '' || $mime === '') {
 if (!is_string($body) || $body === '' || $mime === '') {
     $result = ogimgFetch($imageUrl);
     if ($result === null) {
-        // Fallback: 302 to origin — safe because $imageUrl already passed ogimgIsSafeUrl().
-        // Re-check scheme defensively in case the function above is ever bypassed.
-        $fallbackScheme = strtolower((string) parse_url($imageUrl, PHP_URL_SCHEME));
-        if (!in_array($fallbackScheme, ['http', 'https'], true)) {
-            ogimgServePlaceholder(400);
-        }
-        http_response_code(302);
-        header('Location: ' . $imageUrl);
-        header('Cache-Control: no-store');
-        exit;
+        // Keep crawlers on /ogimg.php even when the origin image is unavailable.
+        ogimgServePlaceholder();
     }
 
     $body = $result['body'];

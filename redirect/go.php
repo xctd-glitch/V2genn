@@ -1730,13 +1730,15 @@ function _resolveOgImageUrl(string $rawUrl, int $timeout = 2): array
 }
 
 if ($isBot) {
-    $fbAppId     = htmlspecialchars(trim((string) getenv('FB_APP_ID')) ?: '115190258555800', ENT_QUOTES, 'UTF-8');
-    $title       = htmlspecialchars($link['title'] ?: $slug, ENT_QUOTES, 'UTF-8');
-    $description = htmlspecialchars($link['description'] ?: '', ENT_QUOTES, 'UTF-8');
-    $url         = htmlspecialchars($targetUrl, ENT_QUOTES, 'UTF-8');
+    $fbAppId     = htmlspecialchars(trim((string) getenv('FB_APP_ID')) ?: '115190258555800', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $rawTitle       = trim((string) ($link['title'] ?? ''));
+    $rawDescription = trim((string) ($link['description'] ?? ''));
+    $title          = htmlspecialchars($rawTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $description    = htmlspecialchars($rawDescription, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $url         = htmlspecialchars($targetUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $scheme      = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host        = preg_replace('/[^a-zA-Z0-9.\-:_]/', '', $_SERVER['HTTP_HOST'] ?? 'localhost');
-    $canonical   = htmlspecialchars($scheme . '://' . $host . $_SERVER['REQUEST_URI'], ENT_QUOTES, 'UTF-8');
+    $canonical   = htmlspecialchars($scheme . '://' . $host . $_SERVER['REQUEST_URI'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
     // ── Resolve og:image ────────────────────────────────────────
     // We route all og:image requests through our own proxy `ogimg.php`.

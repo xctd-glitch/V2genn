@@ -359,14 +359,14 @@ final class RedirectDecision
      */
     public static function renderMetaTagPage(array $meta): string
     {
-        $title = htmlspecialchars(trim(self::stringValue($meta['title'] ?? 'Shortlink Preview')), ENT_QUOTES, 'UTF-8');
+        $title = htmlspecialchars(trim(self::stringValue($meta['title'] ?? '')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $description = htmlspecialchars(
-            trim(self::stringValue($meta['description'] ?? 'Crawler receives the meta tag page.')),
-            ENT_QUOTES,
+            trim(self::stringValue($meta['description'] ?? '')),
+            ENT_QUOTES | ENT_SUBSTITUTE,
             'UTF-8'
         );
-        $image = htmlspecialchars(trim(self::stringValue($meta['image'] ?? '')), ENT_QUOTES, 'UTF-8');
-        $canonical = htmlspecialchars(trim(self::stringValue($meta['canonical_url'] ?? '')), ENT_QUOTES, 'UTF-8');
+        $image = htmlspecialchars(trim(self::stringValue($meta['image'] ?? '')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $canonical = htmlspecialchars(trim(self::stringValue($meta['canonical_url'] ?? '')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         $imageTag = $image !== '' ? '<meta property="og:image" content="' . $image . '">' : '';
         $canonicalTag = $canonical !== '' ? '<meta property="og:url" content="' . $canonical . '">' : '';
