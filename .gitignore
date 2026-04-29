@@ -1,0 +1,23 @@
+# Dependencies
+/vendor/
+
+# PHP tooling caches
+.phpunit.result.cache
+.phpunit.cache/
+.php-cs-fixer.cache
+.phpstan.cache/
+
+# Local agent / workspace tooling
+.agents/
+.termdock/
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local env overrides — never commit secrets
+.env.local
+.env.*.local
