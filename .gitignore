@@ -22,3 +22,9 @@ Thumbs.db
 .env.local
 .env.*.local
 .env
+
+# Build artifacts (production ZIPs) — regenerate via ops/build_production_zip.php
+/build/
+
+# Audit reports — regenerate via tools
+/php-prod-audit-report.*

@@ -45,14 +45,19 @@ $target = $buildDir . '/' . $fileName;
 $excludePaths = [
     '.env',
     '.git',
+    '.gitignore',
     '.github',
     '.codex',
     '.sixth',
     '.claude',
+    '.agents',
+    '.gemini',
+    '.termdock',
     '.idea',
     '.vscode',
     '.cursor',
     '.phpunit.cache',
+    '.phpunit.result.cache',
     'build',
     'tests',
     'node_modules',
@@ -70,7 +75,12 @@ $excludePaths = [
     'phpstan.neon.dist',
     'phpunit.xml.dist',
     'CLAUDE.md',
+    'AGENTS.md',
     'composer.lock',
+    'custom-instructions.md',
+    'php-production-automation',
+    'php-prod-audit-report.j',
+    'php-prod-audit-report.json',
 ];
 
 $excludeExtensions = [
