@@ -33,9 +33,11 @@ require_once __DIR__ . '/../module/security.php';
  *
  * Response
  * ────────
- *   200 OK      + image/jpeg|png|gif|webp|avif  → image bytes (success)
- *   302 Found                                    → fallback to origin (last-resort)
- *   404 / 400   + text/plain                     → error
+ *   200 OK      + image/jpeg|png|gif|webp|avif  → image bytes (success or fallback asset)
+ *
+ * Crawler responses always return image bytes from this endpoint —
+ * we never 302 to the origin URL (that would let Facebook see and
+ * cache the raw origin URL instead of /ogimg.php).
  *
  * Caching
  * ───────
@@ -283,8 +285,9 @@ function ogimgFetch(string $url, int $timeout = 6): ?array
     }
 
     // Build CURLOPT_RESOLVE entry: "host:port:ip" so cURL never re-resolves.
+    $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
     $host = (string) parse_url($url, PHP_URL_HOST);
-    $port = (int) (parse_url($url, PHP_URL_PORT) ?: (strtolower((string) parse_url($url, PHP_URL_SCHEME)) === 'https' ? 443 : 80));
+    $port = (int) (parse_url($url, PHP_URL_PORT) ?: ($scheme === 'https' ? 443 : 80));
     $resolvePin = [$host . ':' . $port . ':' . $resolvedIp];
 
     curl_setopt_array($ch, [
@@ -302,6 +305,11 @@ function ogimgFetch(string $url, int $timeout = 6): ?array
         CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
         // Mimic a browser — some CDNs serve different responses to "curl".
         CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; OGImageProxy/1.0; +https://www.facebook.com/externalhit_uatext.php)',
+        // Same-origin Referer — passes anti-hotlink RewriteCond on tenant
+        // domains whose .htaccess allowlists their own host. Without this,
+        // cURL sends an empty Referer and Apache returns 403 for any image
+        // outside /assets/.
+        CURLOPT_REFERER        => $scheme . '://' . $host . '/',
         CURLOPT_HTTPHEADER     => [
             // identity → tell origin NOT to compress. We want plain bytes.
             'Accept: image/avif,image/webp,image/apng,image/*,*/*;q=0.8',

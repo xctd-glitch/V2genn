@@ -1660,6 +1660,12 @@ function _probeOgImageUrl(string $rawUrl, bool $headOnly, int $timeout): array
         return $empty;
     }
 
+    $probeScheme = strtolower((string) parse_url($rawUrl, PHP_URL_SCHEME));
+    $probeHost   = (string) parse_url($rawUrl, PHP_URL_HOST);
+    $probeReferer = ($probeScheme !== '' && $probeHost !== '')
+        ? $probeScheme . '://' . $probeHost . '/'
+        : '';
+
     $options = [
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS      => 5,
@@ -1669,6 +1675,9 @@ function _probeOgImageUrl(string $rawUrl, bool $headOnly, int $timeout): array
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
         CURLOPT_USERAGENT      => 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+        // Same-origin Referer — passes anti-hotlink RewriteCond on tenant
+        // domains whose .htaccess allowlists their own host.
+        CURLOPT_REFERER        => $probeReferer,
         CURLOPT_HTTPHEADER     => [
             'Accept: image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
             'Accept-Encoding: identity',
