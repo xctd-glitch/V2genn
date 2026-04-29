@@ -1903,9 +1903,12 @@ function setCfCustomSkipIdWaf(array $cfg, string $zoneId, bool $includeIdSkip = 
 function setCfSmartShield(array $cfg, string $zoneId, bool $enabled): array
 {
     $body = [
-        'fight_mode'        => $enabled, // Super Bot Fight Mode
-        'enable_js'         => $enabled,
-        'auto_update_model' => $enabled,
+        'fight_mode'          => $enabled, // Super Bot Fight Mode
+        'enable_js'           => $enabled,
+        'auto_update_model'   => $enabled,
+        // Always allow verified bots (Googlebot, facebookexternalhit, etc.)
+        // so OG/social previews and SEO crawlers are never blocked by SBFM.
+        'sbfm_verified_bots'  => 'allow',
     ];
     $res = cfRequest($cfg, "zones/{$zoneId}/bot_management", 'PUT', $body);
     if (!$res['ok'] || ($res['code'] ?? 0) !== 200) {
@@ -2071,7 +2074,13 @@ function applyCfSecuritySpeed(array $cfg, string $zoneId, array &$logs, array $o
         $logCf(setCfPageShield($cfg, $zoneId, true), 'Page Shield');
     }
     if ($o['bot_fight']) {
-        $logCf(setCfZoneSetting($cfg, $zoneId, 'bot_fight_mode', 'on'), 'Bot Fight Mode');
+        // Explicitly set zone setting to 'off' so Basic Bot Fight Mode is never
+        // active on free-plan zones (basic BFM blocks ALL bots including verified
+        // ones like facebookexternalhit, breaking social link previews).
+        // setCfSmartShield() below calls PUT /bot_management with fight_mode:true +
+        // sbfm_verified_bots:'allow', which re-enables SBFM on Pro/Business plans
+        // with verified-bot pass-through — so the net result is correct on all plans.
+        $logCf(setCfZoneSetting($cfg, $zoneId, 'bot_fight_mode', 'off'), 'Bot Fight Mode zone setting (reset to off; SBFM via API below)');
     }
     if ($o['leaked_creds']) {
         $logCf(setCfLeakedCredentials($cfg, $zoneId, true), 'Leaked Credentials');

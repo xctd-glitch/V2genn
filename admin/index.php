@@ -1809,8 +1809,8 @@ if (empty($_SESSION['dashboard_auth'])) {
                                     </td>
                                     <td class="py-2 px-3 text-right">
                                         <div class="flex items-center justify-end gap-1">
-                                            <!-- Show Sync CF only when the zone is missing or still pending -->
-                                            <button x-show="d.cf_status === 'not_found' || d.cf_status === 'unconfigured' || d.cf_status === 'pending'"
+                                            <!-- Show Sync CF for all states except unconfigured (no CF token = can't sync) -->
+                                            <button x-show="d.cf_status && d.cf_status !== 'unconfigured'"
                                                 @click="syncCloudflare(d)"
                                                 :disabled="syncingCfId === d.id || deletingId === d.id"
                                                 class="btn btn-ghost btn-sm text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 flex items-center gap-1 disabled:opacity-40">

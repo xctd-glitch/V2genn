@@ -1490,7 +1490,7 @@ if (isset($_POST['_ajax'])) {
                     'PUT',
                     '/zones/' . $cfZoneId . '/bot_management',
                     $cfToken,
-                    ['fight_mode' => true, 'enable_js' => true, 'auto_update_model' => true]
+                    ['fight_mode' => true, 'enable_js' => true, 'auto_update_model' => true, 'sbfm_verified_bots' => 'allow']
                 );
             });
 
