@@ -21,3 +21,4 @@ Thumbs.db
 # Local env overrides — never commit secrets
 .env.local
 .env.*.local
+.env
