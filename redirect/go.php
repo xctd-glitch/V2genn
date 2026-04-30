@@ -1767,8 +1767,9 @@ if ($isBot) {
     // Build the public proxy URL (absolute — scrapers won't resolve relatives).
     $proxyImageUrl = '';
     if ($hasImage) {
+        $imageVersion = substr(hash('sha256', $rawImage), 0, 12);
         $proxyImageUrl = htmlspecialchars(
-            $scheme . '://' . $host . '/ogimg.php?s=' . rawurlencode((string) $link['slug']),
+            $scheme . '://' . $host . '/ogimg.php?s=' . rawurlencode((string) $link['slug']) . '&v=' . $imageVersion,
             ENT_QUOTES | ENT_SUBSTITUTE,
             'UTF-8'
         );

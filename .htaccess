@@ -92,6 +92,14 @@ Options -Indexes
     AddType image/x-icon               .ico
 </IfModule>
 
+# ── Cache: robots.txt (fresh scraper policy) ──
+<FilesMatch "^robots\.txt$">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set X-Robots-Tag "all"
+    </IfModule>
+</FilesMatch>
+
 # ── Cache: assets statis (1 minggu) ──
 <FilesMatch "\.(css|js|png|ico|woff2?)$">
     <IfModule mod_headers.c>

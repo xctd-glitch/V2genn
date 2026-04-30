@@ -1,76 +1,39 @@
-# ─────────────────────────────────────────────────────────────
-# robots.txt — short-link / landing router
-# Explicitly allow social-media and search-engine scrapers so
-# Open Graph / Twitter Card previews work correctly.
-# ─────────────────────────────────────────────────────────────
+# robots.txt - short-link / landing router
+# Social preview crawlers are explicitly allowed so Open Graph
+# and Twitter Card previews can fetch the page and proxied image.
 
-# Facebook (Sharing Debugger + link preview)
+# Meta / Facebook link preview crawlers.
 User-agent: facebookexternalhit
-Allow: /
-
-User-agent: facebookexternalhit/1.1
-Allow: /
-
+User-agent: facebookcatalog
 User-agent: Facebot
-Allow: /
-
 User-agent: FacebookBot
-Allow: /
-
 User-agent: meta-externalagent
+User-agent: meta-externalfetcher
+Disallow:
 Allow: /
 
-# Twitter / X
+# Other social preview crawlers.
 User-agent: Twitterbot
-Allow: /
-
-# LinkedIn
 User-agent: LinkedInBot
-Allow: /
-
-# Slack
 User-agent: Slackbot
-Allow: /
-
 User-agent: Slackbot-LinkExpanding
-Allow: /
-
-# Telegram
 User-agent: TelegramBot
-Allow: /
-
-# Discord
 User-agent: Discordbot
-Allow: /
-
-# WhatsApp (link preview)
 User-agent: WhatsApp
-Allow: /
-
-# Apple (iMessage / Safari rich preview)
 User-agent: Applebot
-Allow: /
-
-# Reddit
 User-agent: redditbot
+Disallow:
 Allow: /
 
-# Search engines
+# Search engines.
 User-agent: Googlebot
-Allow: /
-
 User-agent: Bingbot
-Allow: /
-
 User-agent: DuckDuckBot
-Allow: /
-
 User-agent: YandexBot
+Disallow:
 Allow: /
 
-# ─────────────────────────────────────────────────────────────
-# Default policy for everything else
-# ─────────────────────────────────────────────────────────────
+# Default policy for everything else.
 User-agent: *
 Disallow: /data/
 Disallow: /bootstrap/

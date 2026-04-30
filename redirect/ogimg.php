@@ -52,34 +52,21 @@ tp_load_env_file(__DIR__ . '/../.env');
 // ── DB connection ──────────────────────────────────────────────
 function ogimgDb(): ?PDO
 {
-    static $pdo = null;
-    if ($pdo !== null) {
+    static $pdo = false;
+    if ($pdo instanceof PDO) {
         return $pdo;
     }
-
-    $host = getenv('DB_HOST') ?: 'localhost';
-    $user = getenv('DB_USER') ?: '';
-    $pass = getenv('DB_PASS') ?: '';
-    $name = getenv('DB_NAME') ?: '';
-    if (!$user || !$name) {
+    if ($pdo === null) {
         return null;
     }
 
-    try {
-        $opts = tp_mysql_pdo_options();
-        $connectTimeoutAttr = tp_pdo_mysql_attr('MYSQL_ATTR_CONNECT_TIMEOUT');
-        if ($connectTimeoutAttr !== null) {
-            $opts[$connectTimeoutAttr] = 3;
-        }
-        $initCommandAttr = tp_pdo_mysql_attr('MYSQL_ATTR_INIT_COMMAND');
-        if ($initCommandAttr !== null) {
-            $opts[$initCommandAttr] = 'SET SESSION net_read_timeout=5, net_write_timeout=5';
-        }
-        $pdo = new PDO("mysql:host={$host};dbname={$name};charset=utf8mb4", $user, $pass, $opts);
-    } catch (Throwable $e) {
+    $connection = tp_pdo_connect(true);
+    if (!$connection instanceof PDO) {
         $pdo = null;
+        return null;
     }
 
+    $pdo = $connection;
     return $pdo;
 }
 
@@ -221,14 +208,24 @@ function ogimgDiskCacheWrite(string $slug, string $body, string $mime): void
  */
 function ogimgSafeResolve(string $url): ?string
 {
+    $resolvedIps = ogimgSafeResolveAll($url);
+
+    return $resolvedIps[0] ?? null;
+}
+
+/**
+ * @return list<string>
+ */
+function ogimgSafeResolveAll(string $url): array
+{
     $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
     if (!in_array($scheme, ['http', 'https'], true)) {
-        return null;
+        return [];
     }
 
     $host = (string) parse_url($url, PHP_URL_HOST);
     if ($host === '') {
-        return null;
+        return [];
     }
 
     // Strip IPv6 brackets: [::1] → ::1
@@ -238,20 +235,46 @@ function ogimgSafeResolve(string $url): ?string
 
     // Direct IP literal — validate range immediately without DNS
     if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
-        return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false
-            ? $host
-            : null;
+        if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return [];
+        }
+
+        return [$host];
     }
 
-    // Resolve hostname and validate the resulting IP.
+    $candidates = [];
+    $records = @dns_get_record($host, DNS_A);
+    if (is_array($records)) {
+        foreach ($records as $record) {
+            $ip = (string) ($record['ip'] ?? '');
+            if ($ip !== '') {
+                $candidates[] = $ip;
+            }
+        }
+    }
+
+    // Keep gethostbyname() as a fallback for hosts where dns_get_record() is disabled.
     $resolved = gethostbyname($host);
-    if ($resolved === $host) {
-        return null; // DNS resolution failed — reject to be safe
+    if ($resolved !== $host) {
+        $candidates[] = $resolved;
     }
 
-    return filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false
-        ? $resolved
-        : null;
+    $safeIps = [];
+    foreach (array_values(array_unique($candidates)) as $candidate) {
+        $isPublicIp = filter_var(
+            $candidate,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        );
+        if (
+            filter_var($candidate, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false
+            && $isPublicIp !== false
+        ) {
+            $safeIps[] = $candidate;
+        }
+    }
+
+    return $safeIps;
 }
 
 function ogimgIsSafeUrl(string $url): bool
@@ -268,10 +291,11 @@ function ogimgFetch(string $url, int $timeout = 6): ?array
         return null;
     }
 
-    // Resolve hostname once and pin cURL to that IP via CURLOPT_RESOLVE.
-    // This closes the DNS rebinding window between validation and actual fetch.
-    $resolvedIp = ogimgSafeResolve($url);
-    if ($resolvedIp === null) {
+    // Resolve every public A record and pin cURL to each validated IP in turn.
+    // This keeps the SSRF guard while avoiding false fallback when a CDN's
+    // first DNS answer is temporarily unreachable from the hosting network.
+    $resolvedIps = ogimgSafeResolveAll($url);
+    if ($resolvedIps === []) {
         return null;
     }
 
@@ -279,73 +303,81 @@ function ogimgFetch(string $url, int $timeout = 6): ?array
         return null;
     }
 
-    $ch = curl_init($url);
-    if ($ch === false) {
-        return null;
-    }
-
     // Build CURLOPT_RESOLVE entry: "host:port:ip" so cURL never re-resolves.
     $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
     $host = (string) parse_url($url, PHP_URL_HOST);
     $port = (int) (parse_url($url, PHP_URL_PORT) ?: ($scheme === 'https' ? 443 : 80));
-    $resolvePin = [$host . ':' . $port . ':' . $resolvedIp];
 
-    curl_setopt_array($ch, [
-        CURLOPT_FOLLOWLOCATION  => true,
-        CURLOPT_MAXREDIRS       => 5,
-        CURLOPT_TIMEOUT         => $timeout,
-        CURLOPT_CONNECTTIMEOUT  => 4,
-        CURLOPT_RETURNTRANSFER  => true,
-        CURLOPT_SSL_VERIFYPEER  => true,
-        CURLOPT_SSL_VERIFYHOST  => 2,
-        // Pin the resolved IP — prevents DNS rebinding between validation and fetch.
-        CURLOPT_RESOLVE         => $resolvePin,
-        // Restrict curl to HTTP/HTTPS — blocks file://, ftp://, dict://, gopher://, etc.
-        CURLOPT_PROTOCOLS       => CURLPROTO_HTTP | CURLPROTO_HTTPS,
-        CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
-        // Mimic a browser — some CDNs serve different responses to "curl".
-        CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; OGImageProxy/1.0; +https://www.facebook.com/externalhit_uatext.php)',
-        // Same-origin Referer — passes anti-hotlink RewriteCond on tenant
-        // domains whose .htaccess allowlists their own host. Without this,
-        // cURL sends an empty Referer and Apache returns 403 for any image
-        // outside /assets/.
-        CURLOPT_REFERER        => $scheme . '://' . $host . '/',
-        CURLOPT_HTTPHEADER     => [
-            // identity → tell origin NOT to compress. We want plain bytes.
-            'Accept: image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-            'Accept-Encoding: identity',
-            'Accept-Language: en-US,en;q=0.9',
-            'Cache-Control: no-cache',
-        ],
-        // Cap download size to 10 MB to prevent abuse.
-        CURLOPT_NOPROGRESS     => false,
-        CURLOPT_PROGRESSFUNCTION => static function ($ch, $dlTotal, $dlNow) {
-            return $dlNow > 10 * 1024 * 1024 ? 1 : 0;
-        },
-    ]);
+    foreach ($resolvedIps as $resolvedIp) {
+        $ch = curl_init($url);
+        if ($ch === false) {
+            continue;
+        }
 
-    $body     = curl_exec($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $ctype    = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-    curl_close($ch);
+        $resolveIp = str_contains($resolvedIp, ':') ? '[' . $resolvedIp . ']' : $resolvedIp;
+        $resolvePin = [$host . ':' . $port . ':' . $resolveIp];
 
-    if (!is_string($body) || $body === '') {
-        return null;
+        curl_setopt_array($ch, [
+            CURLOPT_FOLLOWLOCATION  => true,
+            CURLOPT_MAXREDIRS       => 5,
+            CURLOPT_TIMEOUT         => $timeout,
+            CURLOPT_CONNECTTIMEOUT  => 4,
+            CURLOPT_RETURNTRANSFER  => true,
+            CURLOPT_SSL_VERIFYPEER  => true,
+            CURLOPT_SSL_VERIFYHOST  => 2,
+            // Pin the resolved IP — prevents DNS rebinding between validation and fetch.
+            CURLOPT_RESOLVE         => $resolvePin,
+            CURLOPT_IPRESOLVE       => CURL_IPRESOLVE_V4,
+            // Restrict curl to HTTP/HTTPS — blocks file://, ftp://, dict://, gopher://, etc.
+            CURLOPT_PROTOCOLS       => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            // Use a normal browser UA; some image CDNs reject custom proxy/bot UAs.
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                . 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            // Same-origin Referer — passes anti-hotlink RewriteCond on tenant
+            // domains whose .htaccess allowlists their own host. Without this,
+            // cURL sends an empty Referer and Apache returns 403 for any image
+            // outside /assets/.
+            CURLOPT_REFERER        => $scheme . '://' . $host . '/',
+            CURLOPT_HTTPHEADER     => [
+                // identity → tell origin NOT to compress. We want plain bytes.
+                'Accept: image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+                'Accept-Encoding: identity',
+                'Accept-Language: en-US,en;q=0.9',
+                'Cache-Control: no-cache',
+            ],
+            // Cap download size to 10 MB to prevent abuse.
+            CURLOPT_NOPROGRESS     => false,
+            CURLOPT_PROGRESSFUNCTION => static function ($ch, $dlTotal, $dlNow) {
+                return $dlNow > 10 * 1024 * 1024 ? 1 : 0;
+            },
+        ]);
+
+        $body = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $ctype = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        curl_close($ch);
+
+        if (!is_string($body) || $body === '') {
+            continue;
+        }
+        if ($httpCode < 200 || $httpCode >= 300) {
+            continue;
+        }
+
+        $mime = ogimgExtractMime($ctype);
+        if ($mime === '') {
+            // Fallback: sniff MIME from magic bytes
+            $mime = ogimgSniffMime($body);
+        }
+        if ($mime === '') {
+            continue;
+        }
+
+        return ['body' => $body, 'mime' => $mime];
     }
-    if ($httpCode < 200 || $httpCode >= 300) {
-        return null;
-    }
 
-    $mime = ogimgExtractMime($ctype);
-    if ($mime === '') {
-        // Fallback: sniff MIME from magic bytes
-        $mime = ogimgSniffMime($body);
-    }
-    if ($mime === '') {
-        return null;
-    }
-
-    return ['body' => $body, 'mime' => $mime];
+    return null;
 }
 
 // ── MIME sniffing for common image formats ─────────────────────
