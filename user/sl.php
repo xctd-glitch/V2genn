@@ -6,7 +6,6 @@ require_once __DIR__ . '/../bootstrap/host_utils.php';
 require_once __DIR__ . '/../bootstrap/admin_auth.php'; // brings tp_admin_username() for CF auto-sync
 
 ob_start();
-tp_runtime_harden();
 tp_secure_session_bootstrap();
 session_start();
 tp_send_security_headers();
@@ -943,8 +942,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'by_subid'     => $bySubid,
                 ]);
             } catch (Throwable $e) {
-                error_log('sl.get_conversions: ' . $e->getMessage());
-                jsonOut(['success' => false, 'message' => 'Failed to load conversions.']);
+                jsonOut(['success' => false, 'message' => $e->getMessage()]);
             }
         }
 

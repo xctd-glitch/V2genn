@@ -5,7 +5,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../bootstrap/security_bootstrap.php';
 require_once __DIR__ . '/../bootstrap/admin_auth.php';
 
-tp_runtime_harden();
 tp_secure_session_bootstrap();
 session_start();
 tp_send_security_headers();

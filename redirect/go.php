@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../bootstrap/runtime_compat.php';
-tp_runtime_harden();
 
 /**
  * go.php - Shortlink Redirect Handler
@@ -120,22 +119,13 @@ function goDb(): ?PDO
 }
 
 // ── Get real visitor IP (Cloudflare → X-Forwarded-For → REMOTE_ADDR) ──
-// CF/XFF headers are only honoured when the connecting peer (REMOTE_ADDR)
-// is itself a Cloudflare edge IP. Otherwise an attacker hitting the origin
-// directly could spoof CF-Connecting-IP to bypass rate limits or pollute
-// the audit log. The trust list is data/cf_ips.json (refreshed by
-// ops/update_cf_ips.php cron).
 function getVisitorIp(): string
 {
-    $trustProxy = function_exists('tp_request_via_cloudflare') && tp_request_via_cloudflare();
-
-    $candidates = [];
-    if ($trustProxy) {
-        $candidates[] = trim((string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''));
-        $candidates[] = trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''))[0]);
-    }
-    $candidates[] = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
-
+    $candidates = [
+        trim((string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '')),
+        trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''))[0]),
+        trim((string) ($_SERVER['REMOTE_ADDR'] ?? '')),
+    ];
     foreach ($candidates as $ip) {
         if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP) !== false) {
             return $ip;
