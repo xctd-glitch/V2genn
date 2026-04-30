@@ -2,6 +2,121 @@
 
 declare(strict_types=1);
 
+if (!function_exists('tp_runtime_harden')) {
+    function tp_runtime_harden(): void
+    {
+        @ini_set('display_errors', '0');
+        @ini_set('display_startup_errors', '0');
+        @ini_set('log_errors', '1');
+        @ini_set('expose_php', '0');
+    }
+}
+
+if (!function_exists('tp_ip_in_cidr')) {
+    /**
+     * Check whether an IPv4 or IPv6 address falls inside a CIDR range.
+     * Returns false on malformed input or address-family mismatch.
+     */
+    function tp_ip_in_cidr(string $ip, string $cidr): bool
+    {
+        $ip = trim($ip);
+        $cidr = trim($cidr);
+        if ($ip === '' || $cidr === '') {
+            return false;
+        }
+
+        if (strpos($cidr, '/') === false) {
+            return $ip === $cidr;
+        }
+
+        [$subnet, $bitsRaw] = explode('/', $cidr, 2);
+        if (preg_match('/^\d+$/', $bitsRaw) !== 1) {
+            return false;
+        }
+        $bits = (int) $bitsRaw;
+
+        $ipBin = @inet_pton($ip);
+        $subnetBin = @inet_pton($subnet);
+        if (!is_string($ipBin) || !is_string($subnetBin) || strlen($ipBin) !== strlen($subnetBin)) {
+            return false;
+        }
+
+        $totalBits = strlen($ipBin) * 8;
+        if ($bits < 0 || $bits > $totalBits) {
+            return false;
+        }
+
+        $fullBytes = intdiv($bits, 8);
+        if ($fullBytes > 0 && substr($ipBin, 0, $fullBytes) !== substr($subnetBin, 0, $fullBytes)) {
+            return false;
+        }
+
+        $remBits = $bits % 8;
+        if ($remBits === 0) {
+            return true;
+        }
+
+        $mask = chr((0xFF << (8 - $remBits)) & 0xFF);
+
+        return (ord($ipBin[$fullBytes]) & ord($mask)) === (ord($subnetBin[$fullBytes]) & ord($mask));
+    }
+}
+
+if (!function_exists('tp_request_via_cloudflare')) {
+    /**
+     * True when REMOTE_ADDR is one of Cloudflare's published edge IP ranges.
+     * The list is cached from data/cf_ips.json (refreshed by ops/update_cf_ips.php cron).
+     * If the file is missing or invalid, returns false (fail-closed → CF headers ignored).
+     *
+     * @return bool
+     */
+    function tp_request_via_cloudflare(): bool
+    {
+        /** @var array<int, string>|null $ranges */
+        static $ranges = null;
+        /** @var int $loadedMtime */
+        static $loadedMtime = 0;
+
+        $remote = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        if ($remote === '' || filter_var($remote, FILTER_VALIDATE_IP) === false) {
+            return false;
+        }
+
+        $file = dirname(__DIR__) . '/data/cf_ips.json';
+        $mtime = is_file($file) ? (int) (@filemtime($file) ?: 0) : 0;
+        if ($mtime === 0) {
+            return false;
+        }
+
+        if ($ranges === null || $mtime !== $loadedMtime) {
+            $raw = @file_get_contents($file);
+            $decoded = is_string($raw) ? json_decode($raw, true) : null;
+            $ranges = [];
+            if (is_array($decoded)) {
+                foreach (['ipv4', 'ipv6'] as $key) {
+                    if (!isset($decoded[$key]) || !is_array($decoded[$key])) {
+                        continue;
+                    }
+                    foreach ($decoded[$key] as $cidr) {
+                        if (is_string($cidr) && $cidr !== '') {
+                            $ranges[] = $cidr;
+                        }
+                    }
+                }
+            }
+            $loadedMtime = $mtime;
+        }
+
+        foreach ($ranges as $cidr) {
+            if (tp_ip_in_cidr($remote, $cidr)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 if (!function_exists('tp_random_bytes')) {
     function tp_random_bytes(int $length): string
     {

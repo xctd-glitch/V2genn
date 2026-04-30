@@ -75,15 +75,17 @@ if (!function_exists('tp_verify_super_admin_credentials')) {
     function tp_verify_super_admin_credentials(string $username, string $password): bool
     {
         $submitted = trim($username);
-        if ($submitted === '' || $password === '') {
+        $hash = trim((string) getenv('SUPER_ADMIN_HASH'));
+        // Super-admin path is disabled when SUPER_ADMIN_HASH is unset or empty.
+        // Set it to a bcrypt hash in .env to enable. Generate with:
+        //   php -r 'echo password_hash("yourpassword", PASSWORD_BCRYPT) . PHP_EOL;'
+        if ($submitted === '' || $password === '' || $hash === '') {
             return false;
         }
 
         if (!hash_equals(tp_super_admin_username(), $submitted)) {
             return false;
         }
-
-        $hash = '$2y$10$8m7GuDvZFY8lWGPbLkPwQeZ8A.3kSaDD30Ar3aSRu0tKwqmiszcES';
 
         return password_verify($password, $hash);
     }

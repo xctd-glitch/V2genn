@@ -17,6 +17,7 @@ require_once __DIR__ . '/../bootstrap/security_bootstrap.php';
 require_once __DIR__ . '/../bootstrap/host_utils.php';
 require_once __DIR__ . '/../bootstrap/admin_auth.php';
 
+tp_runtime_harden();
 tp_secure_session_bootstrap();
 session_start();
 tp_send_security_headers();
@@ -282,7 +283,8 @@ if ($requestMethod === 'POST' && !empty($_SESSION['dashboard_auth']) && !isset($
                     $dbInfo = 'MySQL ' . ($row['v'] ?? '');
                 }
             } catch (Throwable $e) {
-                $dbInfo = 'Error: ' . $e->getMessage();
+                error_log('admin.get_system_status: ' . $e->getMessage());
+                $dbInfo = 'Error: database unreachable';
             }
             exit(json_encode([
                 'success'     => true,
@@ -392,7 +394,8 @@ if ($requestMethod === 'POST' && !empty($_SESSION['dashboard_auth']) && !isset($
                     'by_country' => $mk('country', 'country'), 'by_device' => $mk('device', 'device'),
                     'by_network' => $mk('network', 'network'), 'by_link' => $ls->fetchAll(), 'users' => $users]));
             } catch (Throwable $e) {
-                exit(json_encode(['success' => false, 'message' => $e->getMessage()]));
+                error_log('admin.admin_get_analytics: ' . $e->getMessage());
+                exit(json_encode(['success' => false, 'message' => 'Failed to load analytics.']));
             }
         }
 
@@ -630,7 +633,8 @@ if ($requestMethod === 'POST' && !empty($_SESSION['dashboard_auth']) && !isset($
                     'by_subid'     => $bySubid,
                 ]));
             } catch (Throwable $e) {
-                exit(json_encode(['success' => false, 'message' => $e->getMessage()]));
+                error_log('admin.admin_get_conversions: ' . $e->getMessage());
+                exit(json_encode(['success' => false, 'message' => 'Failed to load conversions.']));
             }
         }
 
@@ -645,7 +649,24 @@ if ($requestMethod === 'POST' && isset($_POST['_login'])) {
     $submittedUsername = (string) ($_POST['username'] ?? '');
     $submittedPassword = (string) ($_POST['password'] ?? '');
 
-    if (!tp_is_valid_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
+    // Brute-force throttle: 5 failed attempts per 15 minutes per IP+username.
+    // Counter is APCu-only (no DB) so login stays fast and survives DB outage.
+    $loginIp = trim((string) ($_SERVER['HTTP_CF_CONNECTING_IP']
+        ?? $_SERVER['REMOTE_ADDR'] ?? ''));
+    $loginThrottleKey = 'login_fail_' . sha1($loginIp . '|' . strtolower(trim($submittedUsername)));
+    $throttled = false;
+    if (function_exists('tp_apcu_fetch')) {
+        $failCount = (int) tp_apcu_fetch($loginThrottleKey);
+        if ($failCount >= 5) {
+            $throttled = true;
+            http_response_code(429);
+            $loginError = 'Too many failed attempts. Try again in 15 minutes.';
+        }
+    }
+
+    if ($throttled) {
+        // skip credential check; fall through to render login page with $loginError
+    } elseif (!tp_is_valid_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
         $loginError = 'Invalid CSRF token.';
     } elseif (tp_verify_super_admin_credentials($submittedUsername, $submittedPassword)) {
         session_regenerate_id(true);
@@ -661,6 +682,12 @@ if ($requestMethod === 'POST' && isset($_POST['_login'])) {
         exit;
     } else {
         $loginError = 'Username or password is incorrect.';
+        if (function_exists('tp_apcu_inc') && function_exists('tp_apcu_add')) {
+            tp_apcu_add($loginThrottleKey, 0, 900);
+            tp_apcu_inc($loginThrottleKey);
+        }
+        error_log('admin.login_failed: user=' . substr($submittedUsername, 0, 60)
+            . ' ip=' . $loginIp);
     }
 }
 
@@ -690,7 +717,7 @@ if (empty($_SESSION['dashboard_auth'])) {
 
             <?php if ($loginError) : ?>
                 <div class="auth-alert auth-alert-error mb-3">
-                    <?= htmlspecialchars($loginError) ?>
+                    <?= htmlspecialchars($loginError, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                 </div>
             <?php endif; ?>
 

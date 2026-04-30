@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../bootstrap/runtime_compat.php';
+tp_runtime_harden();
 require_once __DIR__ . '/../bootstrap/host_utils.php';
 require_once __DIR__ . '/../module/security.php';
 

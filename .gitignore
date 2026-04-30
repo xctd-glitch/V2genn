@@ -23,6 +23,9 @@ Thumbs.db
 .env.*.local
 .env
 
+# Runtime configuration containing tokens / credentials — never commit
+/data/config.json
+
 # Build artifacts (production ZIPs) — regenerate via ops/build_production_zip.php
 /build/
 
