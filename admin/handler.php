@@ -10,7 +10,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../bootstrap/security_bootstrap.php';
 require_once __DIR__ . '/../bootstrap/host_utils.php';
 
-tp_runtime_harden();
 tp_secure_session_bootstrap();
 session_start();
 tp_send_security_headers();
@@ -1053,8 +1052,7 @@ if ($action === 'list_domains') {
     try {
         $rows = $conn->query('SELECT id, sub_domain, domain_id, domain FROM addondomain ORDER BY id DESC')->fetchAll();
     } catch (PDOException $e) {
-        error_log('handler.list_addondomain: ' . $e->getMessage());
-        exit(json_encode(['success' => false, 'domains' => [], 'message' => 'Query failed.']));
+        exit(json_encode(['success' => false, 'domains' => [], 'message' => 'Query failed: ' . $e->getMessage()]));
     }
 
     // ── Cloudflare status per domain ──
@@ -1199,8 +1197,7 @@ if ($action === 'delete_domain') {
             $stmt->execute([$id]);
             $logs[] = ['type' => 'success', 'message' => "DB: Record {$domain} deleted"];
         } catch (PDOException $e) {
-            error_log('handler.delete_addondomain: ' . $e->getMessage());
-            $logs[]   = ['type' => 'error', 'message' => 'DB: delete failed'];
+            $logs[]   = ['type' => 'error', 'message' => 'DB: ' . $e->getMessage()];
             $hasError = true;
         }
     } else {
@@ -2676,8 +2673,7 @@ if ($action === 'add_domain') {
                 $logs[] = ['type' => 'success', 'message' => "DB: {$domain} saved (owner: {$domainId})"];
             }
         } catch (PDOException $e) {
-            error_log('handler.add_domain.persist: ' . $e->getMessage());
-            $logs[] = ['type' => 'warning', 'message' => 'DB: persist failed'];
+            $logs[] = ['type' => 'warning', 'message' => 'DB: ' . $e->getMessage()];
         }
     };
 
@@ -3271,8 +3267,7 @@ if ($action === 'list_global_domains') {
         $rows = $conn->query('SELECT id, domain, created_at FROM user_domains WHERE user_id = 0 ORDER BY id DESC')->fetchAll();
         exit(json_encode(['success' => true, 'data' => $rows]));
     } catch (PDOException $e) {
-        error_log('handler.list_unassigned_domains: ' . $e->getMessage());
-        exit(json_encode(['success' => false, 'data' => [], 'message' => 'Query failed.']));
+        exit(json_encode(['success' => false, 'data' => [], 'message' => $e->getMessage()]));
     }
 }
 

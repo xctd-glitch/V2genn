@@ -121,19 +121,14 @@ function rateLimitByIp(int $maxPerMinute = 120): void
         return;
     }
 
-    // CF/XFF only trusted when REMOTE_ADDR is a Cloudflare edge IP
-    // (data/cf_ips.json, refreshed by ops/update_cf_ips.php). Otherwise
-    // an attacker hitting origin directly could bypass per-IP throttling
-    // by rotating the CF-Connecting-IP header.
-    $trustProxy = function_exists('tp_request_via_cloudflare') && tp_request_via_cloudflare();
-
+    // Prefer Cloudflare real IP, fallback to forwarded, then remote
     $ip = '';
-    if ($trustProxy && !empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-        $ip = trim((string) $_SERVER['HTTP_CF_CONNECTING_IP']);
-    } elseif ($trustProxy && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $ip = trim(explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $ip = trim($_SERVER['HTTP_CF_CONNECTING_IP']);
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ip = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
     } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
-        $ip = trim((string) $_SERVER['REMOTE_ADDR']);
+        $ip = trim($_SERVER['REMOTE_ADDR']);
     }
 
     if (!filter_var($ip, FILTER_VALIDATE_IP)) {

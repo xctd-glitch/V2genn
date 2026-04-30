@@ -2450,12 +2450,12 @@ $stepTitles = [
                 <div class="grid gap-4 mb-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">MAXMIND_ACCOUNT_ID</label>
-                        <input type="text" name="MAXMIND_ACCOUNT_ID" value="<?= h(iv(5, 'MAXMIND_ACCOUNT_ID', '')) ?>"
+                        <input type="text" name="MAXMIND_ACCOUNT_ID" value="<?= h(iv(5, 'MAXMIND_ACCOUNT_ID', '***REDACTED-MAXMIND-ACCT***')) ?>"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">MAXMIND_LICENSE_KEY</label>
-                        <input type="password" name="MAXMIND_LICENSE_KEY" value="<?= h(iv(5, 'MAXMIND_LICENSE_KEY', '')) ?>"
+                        <input type="password" name="MAXMIND_LICENSE_KEY" value="<?= h(iv(5, 'MAXMIND_LICENSE_KEY', '***REDACTED-MAXMIND***')) ?>"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                 </div>
@@ -2469,7 +2469,7 @@ $stepTitles = [
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">IXG_API_SECRET</label>
-                        <input type="text" name="IXG_API_SECRET" value="<?= h(iv(5, 'IXG_API_SECRET', '')) ?>"
+                        <input type="text" name="IXG_API_SECRET" value="<?= h(iv(5, 'IXG_API_SECRET', '***REDACTED-IXG***')) ?>"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                 </div>
@@ -2478,7 +2478,7 @@ $stepTitles = [
                 <div class="grid gap-4 mb-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">TINYURL_API_KEY</label>
-                        <input type="text" name="TINYURL_API_KEY" value="<?= h(iv(5, 'TINYURL_API_KEY', '')) ?>"
+                        <input type="text" name="TINYURL_API_KEY" value="<?= h(iv(5, 'TINYURL_API_KEY', '***REDACTED-TINYURL***')) ?>"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                 </div>
@@ -2490,7 +2490,7 @@ $stepTitles = [
                 <div class="grid gap-4 mb-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">GSB_API_KEY</label>
-                        <input type="text" name="GSB_API_KEY" value="<?= h(iv(5, 'GSB_API_KEY', '')) ?>"
+                        <input type="text" name="GSB_API_KEY" value="<?= h(iv(5, 'GSB_API_KEY', '***REDACTED-GSB***')) ?>"
                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none"
                                placeholder="(optional)">
                     </div>
